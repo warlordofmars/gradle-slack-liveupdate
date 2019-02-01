@@ -37,6 +37,7 @@ version = scmVersion.version
 
 
 
+
 if(hasProperty('github.token')) {
 
     scmVersion {
