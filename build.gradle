@@ -37,7 +37,7 @@ version = scmVersion.version
 
 scmVersion {
     tag {
-        prefix = ''
+        prefix = 'v'
         versionSeparator = ''
     }
     repository {
@@ -47,8 +47,8 @@ scmVersion {
 
 githubRelease {
   token getProperty('github.token')
-  tagName "${rootProject.version}"
-  releaseName "v${rootProject.version}"
+//   tagName "${rootProject.version}"
+//   releaseName "v${rootProject.version}"
   overwrite true
   releaseAssets jar.archivePath
 }
