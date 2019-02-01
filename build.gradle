@@ -1,0 +1,21 @@
+
+plugins {
+    id 'pl.allegro.tech.build.axion-release' version '1.10.0'
+}
+
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+dependencies {
+    compile gradleApi()
+    compile "com.github.seratch:jslack:1.1.7"
+    compile 'org.ajoberstar.grgit:grgit-core:3.0.0'
+}
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+group = 'com.github.warlordofmars'
+version = scmVersion.version
