@@ -35,25 +35,29 @@ repositories {
 group = 'com.github.warlordofmars'
 version = scmVersion.version
 
-scmVersion {
-    repository {
-        customUsername = getProperty('github.token')
+
+if(hasProperty('github.token')) {
+
+    scmVersion {
+        repository {
+            customUsername = getProperty('github.token')
+        }
     }
-}
 
-githubRelease {
-  token getProperty('github.token')
-  tagName "release-${rootProject.version}"
-  releaseName "v${rootProject.version}"
-  overwrite true
-  releaseAssets jar.archivePath
-}
-
-task('deploy') {
-    mustRunAfter build
-    if(System.env.containsKey('PROMOTE')) {
-        dependsOn tasks['githubRelease']
+    githubRelease {
+        token getProperty('github.token')
+        tagName "release-${rootProject.version}"
+        releaseName "v${rootProject.version}"
+        overwrite true
+        releaseAssets jar.archivePath
     }
-}
 
-tasks['githubRelease'].mustRunAfter build
+    task('deploy') {
+        mustRunAfter build
+        if(System.env.containsKey('PROMOTE')) {
+            dependsOn tasks['githubRelease']
+        }
+    }
+
+    tasks['githubRelease'].mustRunAfter build
+}
