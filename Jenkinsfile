@@ -34,7 +34,7 @@ pipeline {
         branch 'master'
       }
       steps {
-        sh './gradlew deploy'
+        sh './gradlew deploy -s'
       }
     }
 
