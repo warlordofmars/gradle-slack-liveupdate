@@ -40,6 +40,9 @@ scmVersion {
         prefix = ''
         versionSeparator = ''
     }
+    repository {
+        customUsername = getProperty('github.token')
+    }
 }
 
 githubRelease {
