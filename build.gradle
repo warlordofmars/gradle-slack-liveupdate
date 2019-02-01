@@ -54,10 +54,10 @@ githubRelease {
 }
 
 task('deploy') {
-    dependsOn build
+    mustRunAfter build
     if(System.env.containsKey('PROMOTE')) {
         dependsOn tasks['githubRelease']
     }
 }
 
-tasks['githubRelease'].dependsOn build
+tasks['githubRelease'].mustRunAfter build
