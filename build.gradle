@@ -1,6 +1,21 @@
 
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath "com.squareup.okhttp3:okhttp:3.8.1"
+        classpath "org.zeroturnaround:zt-exec:1.10"
+        classpath "com.j256.simplemagic:simplemagic:1.10"
+    }
+}
+
+
 plugins {
     id 'pl.allegro.tech.build.axion-release' version '1.10.0'
+    id "com.github.breadmoirai.github-release" version "2.2.3"
 }
 
 apply plugin: 'groovy'
@@ -19,3 +34,27 @@ repositories {
 
 group = 'com.github.warlordofmars'
 version = scmVersion.version
+
+scmVersion {
+    tag {
+        prefix = ''
+        versionSeparator = ''
+    }
+}
+
+githubRelease {
+  token getProperty('github.token')
+  tagName "${rootProject.version}"
+  releaseName "v${rootProject.version}"
+  overwrite true
+  releaseAssets jar.archivePath
+}
+
+task('deploy') {
+    dependsOn build
+    if(System.env.containsKey('PROMOTE')) {
+        dependsOn tasks['githubRelease']
+    }
+}
+
+tasks['githubRelease'].dependsOn build
