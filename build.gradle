@@ -4,22 +4,23 @@ buildscript {
         mavenLocal()
         mavenCentral()
         jcenter()
+        maven { 
+            url "https://jitpack.io"
+        }
+        maven {
+            url "https://plugins.gradle.org/m2/" 
+        }
     }
     dependencies {
-        classpath "com.squareup.okhttp3:okhttp:3.8.1"
-        classpath "org.zeroturnaround:zt-exec:1.10"
-        classpath "com.j256.simplemagic:simplemagic:1.10"
+        classpath 'com.github.warlordofmars:gradle-release-helper:release-0.1.0'
     }
 }
 
 
-plugins {
-    id 'pl.allegro.tech.build.axion-release' version '1.10.0'
-    id "com.github.breadmoirai.github-release" version "2.2.3"
-}
-
+apply plugin: 'com.github.warlordofmars.gradle.release'
 apply plugin: 'groovy'
 apply plugin: 'maven'
+
 
 dependencies {
     compile gradleApi()
@@ -33,33 +34,15 @@ repositories {
 }
 
 group = 'com.github.warlordofmars'
-version = scmVersion.version
 
 
+githubRelease.releaseAssets jar.archivePath
 
-
-if(hasProperty('github.token')) {
-
-    scmVersion {
-        repository {
-            customUsername = getProperty('github.token')
-        }
+task('deploy') {
+    mustRunAfter build
+    if(System.env.containsKey('PROMOTE')) {
+        dependsOn tasks['githubRelease']
     }
-
-    githubRelease {
-        token getProperty('github.token')
-        tagName "release-${rootProject.version}"
-        releaseName "v${rootProject.version}"
-        overwrite true
-        releaseAssets jar.archivePath
-    }
-
-    task('deploy') {
-        mustRunAfter build
-        if(System.env.containsKey('PROMOTE')) {
-            dependsOn tasks['githubRelease']
-        }
-    }
-
-    tasks['githubRelease'].mustRunAfter build
 }
+
+tasks['githubRelease'].mustRunAfter build
