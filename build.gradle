@@ -36,10 +36,6 @@ group = 'com.github.warlordofmars'
 version = scmVersion.version
 
 scmVersion {
-    tag {
-        prefix = 'v'
-        versionSeparator = ''
-    }
     repository {
         customUsername = getProperty('github.token')
     }
@@ -47,8 +43,8 @@ scmVersion {
 
 githubRelease {
   token getProperty('github.token')
-//   tagName "${rootProject.version}"
-//   releaseName "v${rootProject.version}"
+  tagName "release-${rootProject.version}"
+  releaseName "v${rootProject.version}"
   overwrite true
   releaseAssets jar.archivePath
 }
