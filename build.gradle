@@ -1,7 +1,7 @@
 
 buildscript {
     dependencies {
-        classpath 'com.github.warlordofmars:gradle-release-helper:release-0.1.0'
+        classpath 'com.github.warlordofmars:gradle-release-helper:release-0.1.2'
     }
 }
 
