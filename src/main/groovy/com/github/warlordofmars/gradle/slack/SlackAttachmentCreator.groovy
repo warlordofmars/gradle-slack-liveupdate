@@ -98,17 +98,17 @@ class SlackAttachmentCreator {
             
             fields << taskField
 
-        }
+            if(task.getDescription() != null) {
 
-        if(task.getDescription() != null) {
+                Field descriptionField = Field.builder()
+                    .title(DESCRIPTION_TITLE)
+                    .value(task.getDescription())
+                    .valueShortEnough(false)
+                    .build()
+                
+                fields << descriptionField
 
-            Field descriptionField = Field.builder()
-                .title(DESCRIPTION_TITLE)
-                .value(task.getDescription())
-                .valueShortEnough(false)
-                .build()
-            
-            fields << descriptionField
+            }
 
         }
         
