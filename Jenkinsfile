@@ -1,3 +1,3 @@
-@Library('github.com/warlordofmars/jenkins-library')
+@Library('github.com/warlordofmars/jenkins-library') _
 
 gradlePluginPipeline()
