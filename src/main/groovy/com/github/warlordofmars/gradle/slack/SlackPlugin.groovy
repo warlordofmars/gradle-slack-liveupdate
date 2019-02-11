@@ -9,8 +9,12 @@ import com.github.seratch.jslack.api.model.Channel
 import com.github.seratch.jslack.api.model.Attachment
 import com.github.seratch.jslack.api.methods.response.chat.ChatUpdateResponse
 import com.github.seratch.jslack.api.methods.response.chat.ChatPostMessageResponse
+import com.github.seratch.jslack.api.methods.response.files.FilesUploadResponse
+import com.github.seratch.jslack.api.methods.response.reactions.ReactionsAddResponse
 import com.github.seratch.jslack.api.methods.request.chat.ChatPostMessageRequest
 import com.github.seratch.jslack.api.methods.request.chat.ChatUpdateRequest
+import com.github.seratch.jslack.api.methods.request.files.FilesUploadRequest
+import com.github.seratch.jslack.api.methods.request.reactions.ReactionsAddRequest
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -20,6 +24,9 @@ import org.gradle.api.logging.StandardOutputListener
 import org.gradle.api.tasks.TaskState
 
 import org.ajoberstar.grgit.Grgit
+
+import java.util.Date
+import groovy.time.TimeCategory
 
 
 class SlackPlugin implements Plugin<Project> {
@@ -35,11 +42,12 @@ class SlackPlugin implements Plugin<Project> {
         
         project.getRootProject().ext {
             completedTasks = []
-            startTime = System.nanoTime()
+            buildStartTime = new Date()
             getRuntime = {
-                def diff = System.nanoTime() - startTime
-                def seconds = diff/1000/1000/1000
-                return String.format("%.2f", seconds)
+                use(TimeCategory) {
+                    def duration = new Date() - buildStartTime
+                    return duration.seconds
+                }
             }
             git = Grgit.open(dir: project.getRootProject().projectDir)
         }
@@ -106,9 +114,68 @@ class SlackPlugin implements Plugin<Project> {
                     .channel(general.getId())
                     .ts(project.firstMessageTimestamp)
                     .attachments([slackMessage])
-                    .build());
+                    .build())
         }
-   
+
+        boolean success = failure == null
+
+        def rootProject = task.getProject().rootProject
+        def gradle = rootProject.getGradle()
+        def completedTasks = rootProject.completedTasks.size()
+        def startingTasks = gradle.startParameter.taskNames.join(", ")
+        def totalTasks = gradle.getTaskGraph().getAllTasks().size()
+
+        def completed = completedTasks == totalTasks
+
+        if(completed || failure) {
+
+            def buildLog = FilesUploadRequest.builder()
+                .token(token)
+                .channels([general.getId()])
+                .threadTs(project.firstMessageTimestamp)
+                .content(mTaskLogBuilder.toString())
+                .build()
+            
+            if(System.env.containsKey('BUILD_NUMBER')) {
+                if(rootProject.hasProperty('git')) {
+                    buildLog.title = "${project.name}-${rootProject.git.branch.current.name}-build-${System.env.BUILD_NUMBER}.log"
+                } else {
+                    buildLog.title = "${project.name}-build-${System.env.BUILD_NUMBER}.log"
+                }
+            } else {
+                if(rootProject.hasProperty('git')) {
+                    buildLog.title = "${project.name}-${rootProject.git.branch.current.name}-build.log"
+                } else {
+                    buildLog.title = "${project.name}-build.log"
+                }
+            }            
+
+            FilesUploadResponse buildLogUpload = slack.methods().filesUpload(buildLog)
+
+
+            ReactionsAddRequest reaction = ReactionsAddRequest.builder()
+                        .token(token)
+                        .channel(general.getId())
+                        .timestamp(project.firstMessageTimestamp)
+                        .build()
+                        
+
+            if(completed && success) {
+                reaction.name = 'tada'
+            }
+
+            if(failure) {
+                reaction.name = 'cry'
+            }
+
+            ReactionsAddResponse successReaction = slack.methods().reactionsAdd(reaction)
+        }
+
+        
+
+        
+
+        
     }
 
     void recordFirstMessageTimestamp(String firstMessageTimestamp, Project project) {

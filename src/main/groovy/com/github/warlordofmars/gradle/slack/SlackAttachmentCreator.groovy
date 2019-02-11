@@ -10,24 +10,18 @@ import org.gradle.api.tasks.TaskState
 class SlackAttachmentCreator {
     private static final String COLOR_PASSED = 'good'
     private static final String COLOR_FAILED = 'danger'
-    private static final String PROJECT_TITLE = 'Project'
-    private static final String STATUS_TITLE = 'Status'
-    private static final String TASK_TITLE = 'Task'
-    private static final String STARTING_TASKS_TITLE = 'Starting Tasks'
-    private static final String FAILURE_TITLE = 'Failure'
-    private static final String DESCRIPTION_TITLE = 'Description'
-    private static final String TASK_RESULT_TITLE = 'Task Result'
-    private static final String TASK_RESULT_PASSED = 'Passed'
-    private static final String TASK_RESULT_FAILED = 'Failed'
-    private static final String BRANCH_TITLE = 'Branch'
-    private static final String AUTHOR_TITLE = 'Author'
-    private static final String COMMIT_TITLE = 'Commit'
-    private static final String TASKS_TITLE = 'Tasks'
-    private static final String TESTS_TITLE = 'Tests'
-    private static final String RUNTIME_TITLE = 'Runtime'
-    private static final String RUNNING_STATUS = 'Running :woman-running:'
-    private static final String COMPLETED_STATUS = 'Completed :white_check_mark:'
-    private static final String FAILURE_STATUS = 'Failure :fire:'
+    private static final String TASK_TITLE = 'task'
+    private static final String FAILURE_TITLE = 'failure reason'
+    private static final String DESCRIPTION_TITLE = 'description'
+    private static final String BRANCH_TITLE = 'branch'
+    private static final String AUTHOR_TITLE = 'author'
+    private static final String COMMIT_TITLE = 'commit'
+    private static final String TASKS_TITLE = 'tasks'
+    private static final String TESTS_TITLE = 'tests'
+    private static final String RUNTIME_TITLE = 'runtime'
+    private static final String RUNNING_STATUS = 'running :woman-running:'
+    private static final String COMPLETED_STATUS = 'completed :white_check_mark:'
+    private static final String FAILURE_STATUS = 'failed :fire:'
 
     static Attachment buildSlackAttachment(Task task, TaskState state, String taskLog) {
      
@@ -37,36 +31,12 @@ class SlackAttachmentCreator {
         def rootProject = task.getProject().rootProject
         def gradle = rootProject.getGradle()
         def completedTasks = rootProject.completedTasks.size()
-        def startingTasks = gradle.startParameter.taskNames.join(", ")
+        def startingTasks = gradle.startParameter.taskNames.collect { "`${it}`" }.join(", ")
         def totalTasks = gradle.getTaskGraph().getAllTasks().size()
 
         def completed = completedTasks == totalTasks
 
         def fields = []
-
-        Field projectField = Field.builder()
-            .title(PROJECT_TITLE)
-            .value("${task.getProject().rootProject.name}")
-            .valueShortEnough(true)
-            .build()
-        
-        fields << projectField
-
-        Field startingTasksField = Field.builder()
-            .title(STARTING_TASKS_TITLE)
-            .value("${startingTasks}")
-            .valueShortEnough(true)
-            .build()
-        
-        fields << startingTasksField
-
-        Field statusField = Field.builder()
-            .title(STATUS_TITLE)
-            .value(failure ? FAILURE_STATUS : completed ? COMPLETED_STATUS : RUNNING_STATUS)
-            .valueShortEnough(true)
-            .build()
-        
-        fields << statusField
 
         if(rootProject.ext.has('getRuntime')) {
             def runtime = rootProject.getRuntime()
@@ -92,7 +62,7 @@ class SlackAttachmentCreator {
 
             Field taskField = Field.builder()
                 .title(TASK_TITLE)
-                .value(":${task.getProject().name}:${task.getName()}")
+                .value("${task.getProject().name} : ${task.getName()}")
                 .valueShortEnough(true)
                 .build()
             
@@ -111,14 +81,36 @@ class SlackAttachmentCreator {
             }
 
         }
+
+        if(rootProject.ext.has('getTestCounts')) {
+            def testCounts = rootProject.getTestCounts()
+
+            Field testsField = Field.builder()
+                .title(TESTS_TITLE)
+                .value("${testCounts['total']} total / ${testCounts['success']} successful / ${testCounts['failed']} failed / ${testCounts['skipped']} skipped")
+                .valueShortEnough(false)
+                .build()
+            
+            fields << testsField
+        }
         
         if(rootProject.hasProperty('git')) {
 
             Field branchField = Field.builder()
                 .title(BRANCH_TITLE)
-                .value(rootProject.git.branch.current.name)
+                .value()
                 .valueShortEnough(true)
                 .build()
+
+            def branch = rootProject.git.branch.current.name
+            
+            if(rootProject.group.startsWith('com.github') && rootProject.group.split('\\.').size() > 2) {
+                def organization = rootProject.group.split('\\.')[2]
+                def gitHubUrl = "https://github.com/${organization}/${rootProject.name}/tree/${branch}"
+                branchField.setValue("<${gitHubUrl}|${branch}>")
+            } else {
+                branchField.setValue(branch)
+            }
             
             fields << branchField
 
@@ -126,7 +118,7 @@ class SlackAttachmentCreator {
 
             Field authorField = Field.builder()
                 .title(AUTHOR_TITLE)
-                .value(lastCommmit.author.email)
+                .value("<mailto:${lastCommmit.author.email}|${lastCommmit.author.name}>")
                 .valueShortEnough(true)
                 .build()
             
@@ -141,18 +133,6 @@ class SlackAttachmentCreator {
             fields << commitField
         }
 
-        if(rootProject.ext.has('getTestCounts')) {
-            def testCounts = rootProject.getTestCounts()
-
-            Field testsField = Field.builder()
-                .title(TESTS_TITLE)
-                .value("${testCounts['total']} total / ${testCounts['success']} successful / ${testCounts['failed']} failed / ${testCounts['skipped']} skipped")
-                .valueShortEnough(false)
-                .build()
-            
-            fields << testsField
-        }
-
         if (!success && failure != null && failure.getCause() != null) {
 
             Field failureField = Field.builder()
@@ -165,13 +145,35 @@ class SlackAttachmentCreator {
 
         }
         
+        String status = failure ? FAILURE_STATUS : completed ? COMPLETED_STATUS : RUNNING_STATUS
+        
         Attachment attachment = Attachment.builder()
             .fields(fields)
             .color(success ? COLOR_PASSED : COLOR_FAILED)
+            .text("started with tasks ${startingTasks} at _${rootProject.buildStartTime}_")
             .build()
 
-        // String messageHeader = "Build " + ( success ? TASK_RESULT_PASSED : TASK_RESULT_FAILED)        
-        // attachments.setFallback(messageHeader)
+        if(System.env.containsKey('BUILD_NUMBER')) {
+            if(rootProject.hasProperty('git')) {
+                attachment.title = "${task.getProject().rootProject.name} build #${System.env.BUILD_NUMBER} on ${rootProject.git.branch.current.name} ${status}"
+                attachment.footer = "${task.getProject().rootProject.name} ${rootProject.git.branch.current.name} #${System.env.BUILD_NUMBER}"
+            } else {
+                attachment.title = "${task.getProject().rootProject.name} build #${System.env.BUILD_NUMBER} ${status}"
+                attachment.footer = "${task.getProject().rootProject.name} #${System.env.BUILD_NUMBER}"
+            }
+        } else {
+            if(rootProject.hasProperty('git')) {
+                attachment.title = "${task.getProject().rootProject.name} build on ${rootProject.git.branch.current.name} ${status}"
+                attachment.footer = "${task.getProject().rootProject.name} ${rootProject.git.branch.current.name}"
+            } else {
+                attachment.title = "${task.getProject().rootProject.name} build ${status}"
+                attachment.footer = "${task.getProject().rootProject.name}"
+            }
+        }
+
+        if(System.env.containsKey('RUN_DISPLAY_URL')) {
+            attachment.titleLink = System.env.RUN_DISPLAY_URL
+        }
 
         return attachment
     }
