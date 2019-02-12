@@ -18,7 +18,7 @@ buildscript {
     maven { url 'https://jitpack.io' }
   }
   dependencies {
-    classpath 'com.github.warlordofmars:gradle-cloudformation-helper:release-0.3.9'
+    classpath 'com.github.warlordofmars:gradle-slack-liveupdate:release-0.3.12'
   }
 }
 ```
