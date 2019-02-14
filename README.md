@@ -76,3 +76,6 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 * Originally based off of [gradle-slack-plugin](https://github.com/Mindera/gradle-slack-plugin) by [Mindera](https://github.com/Mindera)
 * Using [jslack](https://github.com/seratch/jslack) library for Slack API functionality
 * Using [grgit](https://github.com/ajoberstar/grgit) library for Git branch / commit / author metadata in Slack updates
+* Using the [warlordofmars](https://github.com/warlordofmars) gradle plugin, [gradle-release-helper](https://github.com/warlordofmars/gradle-release-helper), for automatic versioning, git tagging, and publishing of releases to GitHub
+* Using the [warlordofmars](https://github.com/warlordofmars) custom gradle distribution [warlordofmars-gradle](https://github.com/warlordofmars/warlordofmars-gradle) in order to define default repositories to avoid duplication across all projects
+* Using the [warlordofmars](https://github.com/warlordofmars) jenkins pipeline library [jenkins-library](https://github.com/warlordofmars/jenkins-library) for re-usable CI/CD pipeline components
